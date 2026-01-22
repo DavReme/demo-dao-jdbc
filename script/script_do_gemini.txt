@@ -1,0 +1,32 @@
+-- 1. Criação do Banco de Dados
+CREATE DATABASE IF NOT EXISTS curso_jdbc;
+USE curso_jdbc;
+
+-- 2. Limpeza (Opcional - limpa tabelas se já existirem)
+DROP TABLE IF EXISTS produto;
+DROP TABLE IF EXISTS categoria;
+
+-- 3. Criação da tabela de Categorias (Tabela "Pai")
+CREATE TABLE categoria (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL
+) ENGINE=InnoDB;
+
+-- 4. Criação da tabela de Produtos (Tabela "Filho" com Chave Estrangeira)
+CREATE TABLE produto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    preco DECIMAL(10, 2) NOT NULL,
+    quantidade INT DEFAULT 0,
+    categoria_id INT,
+    CONSTRAINT fk_categoria FOREIGN KEY (categoria_id) REFERENCES categoria(id)
+) ENGINE=InnoDB;
+
+-- 5. Inserção de dados iniciais para teste
+INSERT INTO categoria (nome) VALUES ('Eletrônicos'), ('Livros'), ('Móveis');
+
+INSERT INTO produto (nome, preco, quantidade, categoria_id) VALUES
+('Smartphone Samsung', 2500.00, 10, 1),
+('Notebook Dell', 4500.00, 5, 1),
+('Java: Como Programar', 150.00, 20, 2),
+('Mesa de Escritório', 800.00, 2, 3);
