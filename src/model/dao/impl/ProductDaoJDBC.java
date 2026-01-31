@@ -2,10 +2,24 @@ package model.dao.impl;
 
 import java.util.List;
 
+import db.DB;
+import db.DbException;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import model.dao.ProductDao;
+import model.entities.Department;
 import model.entities.Product;
 
 public class ProductDaoJDBC implements ProductDao {
+    private Connection connection;
+
+    public ProductDaoJDBC (Connection connection) {
+        this.connection = connection;
+    }
 
     @Override
     public void insert(Product product) {
@@ -27,8 +41,36 @@ public class ProductDaoJDBC implements ProductDao {
 
     @Override
     public Product findById(Integer id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findById'");
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = connection.prepareStatement(
+                "SELECT produto.*, departamento.nome as departamento "
+                + "FROM produto INNER JOIN departamento "
+                + "ON produto.categoria_id = departamento.id "
+                + "WHERE produto.id = ?");
+            ps.setInt(1, id);
+            rs = ps.executeQuery();
+
+            if (rs.next()) {
+                Department department = new Department();
+                department.setId(rs.getInt("categoria_id"));
+                department.setName(rs.getString("departamento"));
+                Product obj = new Product();
+                obj.setId(rs.getInt("id"));
+                obj.setName(rs.getString("nome"));
+                obj.setPrice(rs.getDouble("preco"));
+                obj.setQuantity(rs.getInt("quantidade"));
+                obj.setDepartment(department);
+                return obj;
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatemente(ps);
+            DB.closeResultSet(rs);
+        }
     }
 
     @Override
