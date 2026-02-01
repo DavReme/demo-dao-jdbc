@@ -1,6 +1,9 @@
 package model.dao.impl;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import db.DB;
 import db.DbException;
@@ -54,8 +57,8 @@ public class ProductDaoJDBC implements ProductDao {
 
             if (rs.next()) {
                 Department department = instanciateDepartment(rs);
-                Product obj = instaciateProduct(rs, department);
-                return obj;
+                Product product = instaciateProduct(rs, department);
+                return product;
             }
             return null;
         } catch (SQLException e) {
@@ -66,14 +69,76 @@ public class ProductDaoJDBC implements ProductDao {
         }
     }
 
+    @Override
+    public List<Product> findAll() {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        List<Product> list = new ArrayList<>();
+
+        try {
+            ps = connection.prepareStatement(
+                "SELECT produto.*, departamento.nome as departamento FROM produto "
+                + "INNER JOIN departamento "
+                + "ON produto.categoria_id = departamento.id"
+            );
+            rs = ps.executeQuery();
+            
+            while (rs.next()) {
+                list.add(instaciateProduct(rs, instanciateDepartment(rs)));
+            }
+            return list;
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatemente(ps);
+            DB.closeResultSet(rs);
+        }
+    }
+
+    @Override
+    public List<Product> findByDepartment(Department department) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        List<Product> list = new ArrayList<>();
+
+        try {
+            ps = connection.prepareStatement(
+                "SELECT produto.*, departamento.nome as departamento "
+                + "FROM produto INNER JOIN departamento "
+                + "ON produto.categoria_id = departamento.id "
+                + "WHERE departamento.id = ? "
+                + "ORDER BY nome");
+            ps.setInt(1, department.getId());
+            rs = ps.executeQuery();
+
+            Map<Integer, Department> map = new HashMap<>();
+
+            while (rs.next()) {
+                Department d = map.get(rs.getInt("categoria_id"));
+                if (d == null) {
+                    d = instanciateDepartment(rs);
+                    map.put(rs.getInt("categoria_id"), d);
+                }
+                list.add(instaciateProduct(rs, d));
+            }
+        
+            return list;
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatemente(ps);
+            DB.closeResultSet(rs);
+        }
+    }
+
     private Product instaciateProduct(ResultSet rs, Department department) throws SQLException {
-        Product obj = new Product();
-        obj.setId(rs.getInt("id"));
-        obj.setName(rs.getString("nome"));
-        obj.setPrice(rs.getDouble("preco"));
-        obj.setQuantity(rs.getInt("quantidade"));
-        obj.setDepartment(department);
-        return obj;
+        Product product = new Product();
+        product.setId(rs.getInt("id"));
+        product.setName(rs.getString("nome"));
+        product.setPrice(rs.getDouble("preco"));
+        product.setQuantity(rs.getInt("quantidade"));
+        product.setDepartment(department);
+        return product;
     }
 
     private Department instanciateDepartment(ResultSet rs) throws SQLException {
@@ -82,11 +147,4 @@ public class ProductDaoJDBC implements ProductDao {
         department.setName(rs.getString("departamento"));
         return department;
     }
-
-    @Override
-    public List<Product> findAll() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findAll'");
-    }
-    
 }
