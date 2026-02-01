@@ -43,6 +43,12 @@ public class Program {
     
         System.out.println("Operation test: deleteById | Class: ProductDaoJDBC");
         productDao.deleteById(product.getId());
+
+        System.out.println("Operation test: update | Class: ProductDaoJDBC");
+        Product updateProduct = productDao.findById(2);
+        updateProduct.setPrice(3999.99);
+        productDao.update(updateProduct);
+        System.out.println("Confirming updating of product: " + updateProduct.getId() + " named \"" + updateProduct.getName() + "\".");
     }
 
     private static void prettyPrinting(Product p) {

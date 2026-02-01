@@ -63,8 +63,32 @@ public class ProductDaoJDBC implements ProductDao {
 
     @Override
     public void update(Product product) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'update'");
+        PreparedStatement ps = null;
+        try {
+            ps = connection.prepareStatement(
+                "UPDATE produto "
+                + "SET nome = ?, preco = ?, quantidade = ?, categoria_id = ? "
+                + "WHERE id = ?"
+            );
+
+            ps.setString(1, product.getName());
+            ps.setDouble(2, product.getPrice());
+            ps.setInt(3, product.getQuantity());
+            ps.setInt(4, product.getDepartment().getId());
+            ps.setInt(5, product.getId());
+
+            int rowsAffected = ps.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("\t" + rowsAffected + " rows affected");
+            } else {
+                throw new DbException("\tNo rows affected");
+            }
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatemente(ps);
+        }
     }
 
     @Override
