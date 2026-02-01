@@ -12,6 +12,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import model.dao.ProductDao;
 import model.entities.Department;
@@ -26,8 +27,38 @@ public class ProductDaoJDBC implements ProductDao {
 
     @Override
     public void insert(Product product) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'insert'");
+        PreparedStatement ps = null;
+        try {
+            ps = connection.prepareStatement(
+                "INSERT INTO produto "
+                + "(nome, preco, quantidade, categoria_id) "
+                + "VALUES "
+                + "(?, ?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS
+            );
+
+            ps.setString(1, product.getName());
+            ps.setDouble(2, product.getPrice());
+            ps.setInt(3, product.getQuantity());
+            ps.setInt(4, product.getDepartment().getId());
+
+            int rowsAffected = ps.executeUpdate();
+
+            if (rowsAffected > 0) {
+                ResultSet rs = ps.getGeneratedKeys();
+                if (rs.next()) {
+                    int id = rs.getInt(1);
+                    product.setId(id);
+                }
+                DB.closeResultSet(rs);
+            } else {
+                throw new DbException("No rows affected");
+            }
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatemente(ps);
+        }
     }
 
     @Override
@@ -38,8 +69,28 @@ public class ProductDaoJDBC implements ProductDao {
 
     @Override
     public void deleteById(Integer id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'deleteById'");
+        PreparedStatement ps = null;
+        try {
+            ps = connection.prepareStatement(
+                "DELETE FROM produto "
+                + "WHERE id = ?"
+            );
+            ps.setInt(1, id);
+
+            Product p = findById(id);
+            int rowsAffected = ps.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Confirming deletion of product: " + p.getId() + " named \"" + p.getName() + "\".");
+            } else {
+                throw new DbException("No rows affected");
+            }
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        }
+        finally {
+            DB.closeStatemente(ps);
+        }
     }
 
     @Override
@@ -79,11 +130,19 @@ public class ProductDaoJDBC implements ProductDao {
             ps = connection.prepareStatement(
                 "SELECT produto.*, departamento.nome as departamento FROM produto "
                 + "INNER JOIN departamento "
-                + "ON produto.categoria_id = departamento.id"
+                + "ON produto.categoria_id = departamento.id "
+                + "ORDER BY id"
             );
             rs = ps.executeQuery();
+
+            Map<Integer, Department> map = new HashMap<>();
             
             while (rs.next()) {
+                Department d = map.get(rs.getInt("categoria_id"));
+                if (d == null) {
+                    d = instanciateDepartment(rs);
+                    map.put(rs.getInt("categoria_id"), d);
+                }
                 list.add(instaciateProduct(rs, instanciateDepartment(rs)));
             }
             return list;
@@ -107,7 +166,7 @@ public class ProductDaoJDBC implements ProductDao {
                 + "FROM produto INNER JOIN departamento "
                 + "ON produto.categoria_id = departamento.id "
                 + "WHERE departamento.id = ? "
-                + "ORDER BY nome");
+                + "ORDER BY id");
             ps.setInt(1, department.getId());
             rs = ps.executeQuery();
 
