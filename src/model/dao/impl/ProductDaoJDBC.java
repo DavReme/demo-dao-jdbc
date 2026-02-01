@@ -53,15 +53,8 @@ public class ProductDaoJDBC implements ProductDao {
             rs = ps.executeQuery();
 
             if (rs.next()) {
-                Department department = new Department();
-                department.setId(rs.getInt("categoria_id"));
-                department.setName(rs.getString("departamento"));
-                Product obj = new Product();
-                obj.setId(rs.getInt("id"));
-                obj.setName(rs.getString("nome"));
-                obj.setPrice(rs.getDouble("preco"));
-                obj.setQuantity(rs.getInt("quantidade"));
-                obj.setDepartment(department);
+                Department department = instanciateDepartment(rs);
+                Product obj = instaciateProduct(rs, department);
                 return obj;
             }
             return null;
@@ -71,6 +64,23 @@ public class ProductDaoJDBC implements ProductDao {
             DB.closeStatemente(ps);
             DB.closeResultSet(rs);
         }
+    }
+
+    private Product instaciateProduct(ResultSet rs, Department department) throws SQLException {
+        Product obj = new Product();
+        obj.setId(rs.getInt("id"));
+        obj.setName(rs.getString("nome"));
+        obj.setPrice(rs.getDouble("preco"));
+        obj.setQuantity(rs.getInt("quantidade"));
+        obj.setDepartment(department);
+        return obj;
+    }
+
+    private Department instanciateDepartment(ResultSet rs) throws SQLException {
+        Department department = new Department();
+        department.setId(rs.getInt("categoria_id"));
+        department.setName(rs.getString("departamento"));
+        return department;
     }
 
     @Override
